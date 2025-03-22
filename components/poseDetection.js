@@ -13,9 +13,20 @@ const PoseDetection = () => {
       const video = videoRef.current;
       if (!video) return;
 
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" }, // Use "environment" for rear camera
+      });
+
       video.srcObject = stream;
-      await video.play();
+      video.onloadedmetadata = () => {
+        video.play();
+
+        // Set video and canvas size
+        if (canvasRef.current) {
+          canvasRef.current.width = video.videoWidth;
+          canvasRef.current.height = video.videoHeight;
+        }
+      };
     };
 
     const loadPoseModel = async () => {
@@ -27,7 +38,7 @@ const PoseDetection = () => {
         baseOptions: {
           modelAssetPath:
             "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task",
-          delegate: "GPU", // Uses GPU acceleration if available
+          delegate: "GPU",
         },
         runningMode: "VIDEO",
         numPoses: 1,
@@ -62,9 +73,23 @@ const PoseDetection = () => {
   }, []);
 
   return (
-    <div className="relative">
-      <video ref={videoRef} className="absolute w-full h-full" autoPlay muted />
-      <canvas ref={canvasRef} className="absolute w-full h-full" />
+    <div className="relative w-full h-screen flex justify-center items-center">
+      {/* Video feed */}
+      <video
+        ref={videoRef}
+        className="absolute"
+        style={{ width: "100%", height: "auto", maxWidth: "640px", border: "2px solid gray", borderRadius: "8px" }}
+        autoPlay
+        muted
+        playsInline
+      />
+      
+      {/* Canvas overlay */}
+      <canvas
+        ref={canvasRef}
+        className="absolute"
+        style={{ width: "100%", height: "auto", maxWidth: "640px" }}
+      />
     </div>
   );
 };
